@@ -13,14 +13,16 @@
 
 
 //Variable Declaration
-int sensorPin = D0; // Input pin for LDR
 int relayPin = D1;  // Pin for Relay
+int sensorPin = D2; // Input pin for LDR
 int sensorValue = 0; // variable to store LDR sensor read value
+boolean deviceCondition;
+boolean ledStatus;
 
 //Setup (Running Once)
 void setup() {
-  pinMode(D0, OUTPUT); //Set Relay Module as an OUPUT
-  pinMode(D1, INPUT);  //Set LDR Sensor as an INPUT
+  pinMode(relayPin, OUTPUT); //Set Relay Module as an OUPUT
+  pinMode(sensorPin, INPUT);  //Set LDR Sensor as an INPUT
   Serial.begin(115200); //Serial Port Comm
 
   //Start Wi-Fi Connection
@@ -39,20 +41,42 @@ void setup() {
 
 //Loop (Forever)
 void loop() {
-  
+
+  deviceCondition = Firebase.getBool("devCondition/controlable");
+  if(deviceCondition == true){
+    controlable();
+  } else{
+    unControlable();
+  }
+  delay(1000);  //Give 1 seconds delay to read dB deviceCondition.
+}
+
+
+void controlable(){
+  ledStatus = Firebase.getBool("ledStatusOn");
+  if(ledStatus == true){
+    digitalWrite(relayPin,LOW);  //Turn on Relay Module
+    Serial.println("Turning On Light");
+  }else{
+    digitalWrite(relayPin,HIGH); //Turn off Relay Module
+    Serial.println("Turning Off Light");
+  }
+}
+
+void unControlable(){
   sensorValue = digitalRead(sensorPin); // Read Current Value of Sensor
   Serial.println(sensorValue); //Print in Serial Monitor
     if(sensorValue==1){ //Check Condition of sensorValue
-      digitalWrite(8,LOW);  //Turn off Relay Module
-      updateDatabase(false);  
+      Serial.println("Turning On Light");      
+      digitalWrite(relayPin,LOW);  //Turn on Relay Module
+      updateDatabase(true);  
           
     }else{
-      digitalWrite(8,HIGH); //Turn on Relay Module
-      updateDatabase(true);
+      digitalWrite(relayPin,HIGH); //Turn off Relay Module
+      Serial.println("Turning Off Light"); 
+      updateDatabase(false);     
     }
-    
-  delay(5000);  //Give 5 seconds delay to read.
-
+    delay(5000);  //Give 5 seconds delay to read Sensor.
 }
 
 void updateDatabase( bool stats){
